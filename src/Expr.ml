@@ -36,12 +36,12 @@ let update x v s = fun y -> if x = y then v else s y
 let s = update "x" 1 @@ update "y" 2 @@ update "z" 3 @@ update "t" 4 empty
 
 (* Some testing; comment this definition out when submitting the solution. *)
-let _ =
+(* let _ =
   List.iter
     (fun x ->
        try  Printf.printf "%s=%d\n" x @@ s x
        with Failure s -> Printf.printf "%s\n" s
-    ) ["x"; "a"; "y"; "z"; "t"; "b"]
+    ) ["x"; "a"; "y"; "z"; "t"; "b"] *)
 
 (* Expression evaluator
 
@@ -50,5 +50,26 @@ let _ =
    Takes a state and an expression, and returns the value of the expression in 
    the given state.
 *)
-let eval = failwith "Not implemented yet"
-                    
+let rec eval st ex = 
+	match ex with
+	| Const c -> c
+	| Var x -> st x
+	| Binop (operate, left_exp, right_exp) -> oper operate (eval st left_exp) (eval st right_exp)
+	and oper operate left right =
+		match operate with
+		| "!!" -> from_bool_to_int ((from_int_to_bool left) || (from_int_to_bool right))
+		| "&&" -> from_bool_to_int ((from_int_to_bool left) && (from_int_to_bool right))
+		| "==" -> from_bool_to_int (left == right)
+		| "!=" -> from_bool_to_int (left != right)
+		| "<=" -> from_bool_to_int (left <= right)
+		| "<" -> from_bool_to_int (left < right)
+		| ">=" -> from_bool_to_int (left >= right)
+		| ">" -> from_bool_to_int (left > right)
+		| "+" -> left + right
+		| "-" -> left - right
+		| "*" -> left * right
+		| "/" -> left / right
+		| "%" -> left mod right
+		| _ -> failwith "Error operation"
+		and from_int_to_bool x = x != 0
+		and from_bool_to_int x = if x then 1 else 0

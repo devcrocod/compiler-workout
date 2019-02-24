@@ -1,4 +1,5 @@
-open GT       
+open GT
+open List  
        
 (* The type for the stack machine instructions *)
 @type insn =
@@ -22,8 +23,20 @@ type config = int list * Syntax.Stmt.config
      val eval : config -> prg -> config
 
    Takes a configuration and a program, and returns a configuration as a result
- *)                         
-let eval _ = failwith "Not yet implemented"
+ *)
+let rec eval conf prg = 
+	match prg with
+	| x :: xl -> eval (step conf x) xl
+	| [] -> conf
+	and step (stack, (state, input, output)) instr = 
+		match instr with
+		| BINOP operate -> ((Syntax.Expr.oper operate) (hd (tl stack)) (hd stack) :: (tl (tl stack)), (state, input, output))
+		| CONST c -> (c :: stack, (state, input, output))
+		| READ -> (hd input :: stack, (state, tl input, output))
+		| WRITE -> (tl stack, (state, input, output @ [hd stack]))
+		| LD x -> (state x :: stack, (state, input, output))
+		| ST x -> (tl stack, (Syntax.Expr.update x (hd stack) state, input, output))
+
 
 (* Top-level evaluation
 
@@ -42,3 +55,14 @@ let run i p = let (_, (_, _, o)) = eval ([], (Syntax.Expr.empty, i, [])) p in o
  *)
 
 let compile _ = failwith "Not yet implemented"
+let rec compile stmt = 
+	match stmt with
+		| Syntax.Stmt.Read x -> [READ; ST x]
+		| Syntax.Stmt.Write x -> comp_expr x @ [WRITE]
+		| Syntax.Stmt.Assign (x, y) -> comp_expr y @ [ST x]
+		| Syntax.Stmt.Seq (t1, t2) -> compile t1 @ compile t2
+	and comp_expr ex = 
+		match ex with
+		| Syntax.Expr.Const c -> [CONST c]
+		| Syntax.Expr.Var x -> [LD x]
+		| Syntax.Expr.Binop (operate, left, right) -> comp_expr left @ comp_expr right @ [BINOP operate]

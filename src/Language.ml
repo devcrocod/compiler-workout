@@ -43,6 +43,7 @@ module Expr =
  
        Takes a state and an expression, and returns the value of the expression in 
        the given state.
+<<<<<<< HEAD
     *)
     let rec eval st ex = 
       match ex with
@@ -67,12 +68,17 @@ module Expr =
         | _ -> failwith "Error operation"
       and from_int_to_bool x = x != 0
       and from_bool_to_int x = if x then 1 else 0
+=======
+     *)                                                       
+    let eval _ _ = failwith "Not yet implemented"
+>>>>>>> c23462cc4e2dcc0ee0565949b6bf991822a1e522
 
     (* Expression parser. You can use the following terminals:
          IDENT   --- a non-empty identifier a-zA-Z[a-zA-Z0-9_]* as a string
          DECIMAL --- a decimal constant [0-9]+ as a string
-   
+                                                                                                                  
     *)
+<<<<<<< HEAD
     ostap (
       expr:
       !(Ostap.Util.expr
@@ -87,8 +93,12 @@ module Expr =
         primary
       );
       primary: x:IDENT {Var x} | n:DECIMAL {Const n} | -"(" expr -")"
+=======
+    ostap (                                      
+      parse: empty {failwith "Not yet implemented"}
+>>>>>>> c23462cc4e2dcc0ee0565949b6bf991822a1e522
     )
-
+    
   end
                     
 (* Simple statements: syntax and sematics *)
@@ -106,6 +116,7 @@ module Stmt =
     type config = Expr.state * int list * int list 
 
     (* Statement evaluator
+<<<<<<< HEAD
           val eval : config -> t -> config
        Takes a configuration and a statement, and returns another configuration
     *)
@@ -124,6 +135,18 @@ module Stmt =
         | x:IDENT ":=" e:!(Expr.expr) {Assign (x, e)};
 
       parse: line:statement ";" tail:parse {Seq (line, tail)} | statement
+=======
+
+         val eval : config -> t -> config
+
+       Takes a configuration and a statement, and returns another configuration
+    *)
+    let eval _ _ = failwith "Not yet implemented"
+
+    (* Statement parser *)
+    ostap (
+      parse: empty {failwith "Not yet implemented"}
+>>>>>>> c23462cc4e2dcc0ee0565949b6bf991822a1e522
     )
       
   end
@@ -138,4 +161,11 @@ type t = Stmt.t
    Takes a program and its input stream, and returns the output stream
 *)
 let eval p i =
+<<<<<<< HEAD
   let _, _, o = Stmt.eval (Expr.empty, i, []) p in o
+=======
+  let _, _, o = Stmt.eval (Expr.empty, i, []) p in o
+
+(* Top-level parser *)
+let parse = Stmt.parse                                                     
+>>>>>>> c23462cc4e2dcc0ee0565949b6bf991822a1e522

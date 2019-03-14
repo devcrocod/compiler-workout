@@ -22,8 +22,7 @@ type config = int list * Stmt.config
 (* Stack machine interpreter
      val eval : config -> prg -> config
    Takes a configuration and a program, and returns a configuration as a result
-<<<<<<< HEAD
- *)                         
+*)                         
 let rec eval conf prg = 
 	match prg with
 	| x :: xl -> eval (step conf x) xl
@@ -36,11 +35,6 @@ let rec eval conf prg =
 		| WRITE -> (tl stack, (state, input, output @ [hd stack]))
 		| LD x -> (state x :: stack, (state, input, output))
 		| ST x -> (tl stack, (Expr.update x (hd stack) state, input, output))
-=======
-*)                         
-let rec eval conf prog = failwith "Not yet implemented"
->>>>>>> c23462cc4e2dcc0ee0565949b6bf991822a1e522
-
 
 (* Top-level evaluation
      val run : prg -> int list -> int list
@@ -52,20 +46,6 @@ let run p i = let (_, (_, _, o)) = eval ([], (Expr.empty, i, [])) p in o
      val compile : Language.Stmt.t -> prg
    Takes a program in the source language and returns an equivalent program for the
    stack machine
-<<<<<<< HEAD
- *)
-let rec compile stmt = 
-	match stmt with
-		| Stmt.Read x -> [READ; ST x]
-		| Stmt.Write x -> comp_expr x @ [WRITE]
-		| Stmt.Assign (x, y) -> comp_expr y @ [ST x]
-		| Stmt.Seq (t1, t2) -> compile t1 @ compile t2
-	and comp_expr ex = 
-		match ex with
-		| Expr.Const c -> [CONST c]
-		| Expr.Var x -> [LD x]
-		| Expr.Binop (operate, left, right) -> comp_expr left @ comp_expr right @ [BINOP operate]
-=======
 *)
 let rec compile =
   let rec expr = function
@@ -78,4 +58,3 @@ let rec compile =
   | Stmt.Read x        -> [READ; ST x]
   | Stmt.Write e       -> expr e @ [WRITE]
   | Stmt.Assign (x, e) -> expr e @ [ST x]
->>>>>>> c23462cc4e2dcc0ee0565949b6bf991822a1e522

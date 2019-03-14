@@ -73,7 +73,7 @@ let show instr =
 (* Opening stack machine to use instructions without fully qualified names *)
 open SM
 
-let bin op = match op with
+let cmp_bin op = match op with
   | "<=" -> "le"
   | "<" -> "l"
   | ">=" -> "ge"
@@ -81,16 +81,16 @@ let bin op = match op with
   | "==" -> "e"
   | "!=" -> "ne"
 
-let rec compile_binop env op : env * inst list = 
+let rec compile_binop env op = 
   let zero_op oper = Binop ("^", oper, oper) in
-  let compare_op op f s pl = [zero_op eax; Binop ("cmp", s, f); Set (bin op, "%al"); Mov (eax, pl)] in
-  let s, f env = env#pop2 in
+  let compare_op op f s pl = [zero_op eax; Binop ("cmp", s, f); Set (cmp_bin op, "%al"); Mov (eax, pl)] in
+  let s, f, env = env#pop2 in
   let pl, env = env#allocate in
-  let inst_list = match op with
+  let instr_list = match op with
     | "+" | "-" | "*" -> (match (f, s) with
-                          | (S _, S _) -> [Mov (f, eax); Binop (op, s, eax); Mov (eax, space)]
+                          | (S _, S _) -> [Mov (f, eax); Binop (op, s, eax); Mov (eax, pl)]
                           | _ -> if pl = f then [Binop (op, s, f)] else [Binop (op, s, f); Mov (f, pl)])
-    | "<=" | "<" | ">=" | ">" | "==" | "!=" -> (match (l, r) with
+    | "<=" | "<" | ">=" | ">" | "==" | "!=" -> (match (f, s) with
                                                 | (S _, S _) -> [Mov (f, edx)] @ compare_op op edx s pl
                                                 | _          -> compare_op op f s pl)
     | "/" | "%" -> let res = if op = "/" then eax else edx in
@@ -98,20 +98,7 @@ let rec compile_binop env op : env * inst list =
     | "!!" -> [zero_op eax; Mov (f, edx); Binop ("!!", s, edx); Set ("nz", "%al"); Mov (eax, pl)]
     | "&&" -> [zero_op eax; zero_op edx; Binop ("cmp", L 0, f); Set ("ne", "%al");
                 Binop ("cmp", L 0, s); Set ("ne", "%dl"); Binop ("&&", edx, eax); Mov (eax, pl)]
-    in env, inst_list
-
-let compile_alone env inst =
-  let inst_list = match inst with
-  | BINOP operand -> compile_binop env operand
-  | CONST n -> let pl, e = env#allocate in e, [Mov (L, n, pl)]
-  | READ -> let pl, e = env#allocate in e, [Call "Lread"; Mov (eax, pl)]
-  | WRITE -> let v, e = env#pop in e, [Push v; Call "Lwrite", Pop eax]
-  | LD x -> let pl, e = env#allocate in
-            let v = env#loc x in
-            e, [Mov ((M v), pl)]
-  | ST x -> let val, e = (env#global x)#pop in
-            let v = env#loc x in
-            e, [Mov (val, (M v))]
+    in env, instr_list
 
 (* Symbolic stack machine evaluator
 
@@ -123,9 +110,19 @@ let compile_alone env inst =
 let rec compile env prg = match prg with
   | [] -> env, []
   | inst::tail ->
-      let env_update_beg, beg_inst_list = (compile_alone env inst) in
-      let env_update_tail, tail_inst_list = (compile env_update_beg tail) in
-      env_update_tail, (beg_inst_list @ tail_inst_list)
+      let env_update_beg, head_instr_list = (match inst with
+                | BINOP operand -> compile_binop env operand
+                | CONST n -> let pl, e = env#allocate in e, [Mov (L n, pl)]
+                | READ -> let pl, e = env#allocate in e, [Call "Lread"; Mov (eax, pl)]
+                | WRITE -> let v, e = env#pop in e, [Push v; Call "Lwrite"; Pop eax]
+                | LD x -> let pl, e = env#allocate in
+                          let v = env#loc x in
+                          e, [Mov ((M v), pl)]
+                | ST x -> let n_val, e = (env#global x)#pop in
+                          let v = env#loc x in
+                          e, [Mov (n_val, (M v))]) in
+      let env_update_tail, tail_instr_list = compile env_update_beg tail in
+      env_update_tail, (head_instr_list @ tail_instr_list)
 
 
 (* A set of strings *)           
